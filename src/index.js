@@ -3,54 +3,32 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import Quill from 'quill'
-import QuillCursors from 'quill-cursors'
+import { StyledEngineProvider } from '@mui/material/styles';
 import * as Y from 'yjs'
-import { QuillBinding } from 'y-quill'
 import { WebrtcProvider } from 'y-webrtc'
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <StyledEngineProvider injectFirst>
+      <App />
+    </StyledEngineProvider>
   </React.StrictMode>
 );
 
-setTimeout( () =>
-{
-  Quill.register('modules/cursors', QuillCursors);
+// A Yjs document holds the shared data
+const ydoc = new Y.Doc()
+// Define a shared text type on the document
+const yarray = ydoc.getArray('my array')
 
-  const quill = new Quill(document.querySelector('#editor'), {
-    modules: {
-      cursors: true,
-      toolbar: [
-        // adding some basic Quill content features
-        [{ header: [1, 2, false] }],
-        ['bold', 'italic', 'underline'],
-        ['image', 'code-block']
-      ],
-      history: {
-        // Local undo shouldn't undo changes
-        // from remote users
-        userOnly: true
-      }
-    },
-    placeholder: 'Start collaborating...',
-    theme: 'snow' // 'bubble' is also great
-  })
+const provider = new WebrtcProvider('blubibu', ydoc, {signaling: ['ws://localhost:4444']})
 
-  // A Yjs document holds the shared data
-  const ydoc = new Y.Doc()
-  // Define a shared text type on the document
-  const ytext = ydoc.getText('quill')
-
-  // Create an editor-binding which
-  // "binds" the quill editor to a Y.Text type.
-  const binding = new QuillBinding(ytext, quill)
-
-  const provider = new WebrtcProvider('blubibu', ydoc, {signaling: ['ws://localhost:4444']})
-
-}, 3000 );
+// We can register change-observers like this
+yarray.observe(event => {
+  // Log a delta every time the type changes
+  // Learn more about the delta format here: https://quilljs.com/docs/delta/
+  console.log('delta:', event.changes.delta)
+})
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
